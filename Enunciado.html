@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reto de Arquitectura — Refactorización con SRP &amp; Alta Cohesión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ─────────────────────────────── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg:       #0b0f1a;
+      --surface:  #111827;
+      --border:   #1e293b;
+      --text:     #e2e8f0;
+      --muted:    #94a3b8;
+      --accent:   #22d3ee;
+      --accent-light: rgba(34,211,238,.1);
+      --red:      #f43f5e;
+      --red-light: rgba(244,63,94,.08);
+      --green:    #34d399;
+      --green-light: rgba(52,211,153,.08);
+      --amber:    #fbbf24;
+      --amber-light: rgba(251,191,36,.08);
+      --code-bg:  #1e293b;
+      --radius:   12px;
+      --shadow:   0 2px 8px rgba(0,0,0,.3), 0 0 1px rgba(34,211,238,.15);
+      --glow:     0 0 20px rgba(34,211,238,.15);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ───────────────────────────────────── */
+    .container {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 3rem 2.5rem 5rem;
+    }
+
+    /* ── Header ───────────────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: .75rem;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: var(--accent-light);
+      border: 1px solid rgba(34,211,238,.25);
+      padding: .35rem .9rem;
+      border-radius: 999px;
+      margin-bottom: 1rem;
+      transition: box-shadow .25s ease;
+    }
+
+    .badge:hover {
+      box-shadow: 0 0 12px rgba(34,211,238,.3);
+    }
+
+    header h1 {
+      font-size: 2.25rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: .75rem;
+      background: linear-gradient(135deg, #e2e8f0, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header p {
+      font-size: 1.05rem;
+      color: var(--muted);
+      max-width: 560px;
+      margin: 0 auto;
+    }
+
+    /* ── Sections ─────────────────────────────────── */
+    section { margin-bottom: 2.5rem; }
+
+    section h2 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      padding-bottom: .5rem;
+      border-bottom: 2px solid var(--border);
+      background: linear-gradient(90deg, var(--accent), #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    section h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin: 1.25rem 0 .5rem;
+    }
+
+    p + p { margin-top: .75rem; }
+
+    /* ── Cards ────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.25rem;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--glow), var(--shadow);
+      border-color: var(--accent);
+    }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .card-grid .card { margin-bottom: 0; }
+
+    .card-icon {
+      font-size: 1.6rem;
+      margin-bottom: .5rem;
+    }
+
+    .card h4 {
+      font-size: .95rem;
+      font-weight: 600;
+      margin-bottom: .35rem;
+    }
+
+    .card p, .card li {
+      font-size: .9rem;
+      color: var(--muted);
+    }
+
+    /* ── Alert boxes ──────────────────────────────── */
+    .alert {
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+      border-left: 4px solid;
+      transition: transform .2s ease, box-shadow .2s ease;
+    }
+
+    .alert:hover {
+      transform: translateX(4px);
+      box-shadow: var(--shadow);
+    }
+
+    .alert--red   { background: var(--red-light);   border-color: var(--red);   }
+    .alert--green { background: var(--green-light); border-color: var(--green); }
+    .alert--amber { background: var(--amber-light); border-color: var(--amber); }
+
+    .alert strong { display: block; margin-bottom: .25rem; }
+
+    /* ── Lists ────────────────────────────────────── */
+    ul, ol {
+      padding-left: 1.4rem;
+      margin-top: .5rem;
+    }
+
+    li { margin-bottom: .4rem; font-size: .95rem; }
+
+    li::marker { color: var(--muted); }
+
+    /* ── Code ─────────────────────────────────────── */
+    code {
+      font-family: 'Fira Code', 'Consolas', monospace;
+      font-size: .85em;
+      background: var(--code-bg);
+      padding: .15em .4em;
+      border-radius: 4px;
+    }
+
+    pre {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      overflow-x: auto;
+      font-size: .85rem;
+      line-height: 1.6;
+      margin: 1rem 0;
+    }
+
+    pre code {
+      background: none;
+      padding: 0;
+      color: inherit;
+    }
+
+    .kw  { color: #569cd6; }
+    .str { color: #ce9178; }
+    .typ { color: #4ec9b0; }
+    .cmt { color: #6a9955; }
+    .num { color: #b5cea8; }
+
+    /* ── Table ────────────────────────────────────── */
+    .table-wrap {
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .9rem;
+    }
+
+    th, td {
+      text-align: left;
+      padding: .65rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--bg);
+      font-weight: 600;
+      font-size: .8rem;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--muted);
+    }
+
+    /* ── Repo link ────────────────────────────────── */
+    .repo-link {
+      display: inline-flex;
+      align-items: center;
+      gap: .5rem;
+      font-weight: 500;
+      color: var(--bg);
+      background: linear-gradient(135deg, var(--accent), #818cf8);
+      padding: .7rem 1.4rem;
+      border-radius: var(--radius);
+      text-decoration: none;
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+
+    .repo-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(34,211,238,.35);
+    }
+
+    .repo-link svg { width: 20px; height: 20px; fill: currentColor; }
+
+    /* ── Footer ───────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 2rem 0 1rem;
+      font-size: .8rem;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+
+    /* ── Responsive ───────────────────────────────── */
+    @media (max-width: 960px) {
+      .card-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 600px) {
+      header h1 { font-size: 1.6rem; }
+      .container { padding: 2rem 1rem 3rem; }
+      .card-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- ═══════════ HEADER ═══════════ -->
+  <header>
+    <span class="badge">Reto de Arquitectura de Software</span>
+    <h1>Sistema de Ventas<br />"Doña Rosa"</h1>
+    <p>Analiza, comprende y refactoriza este sistema monolítico aplicando los principios de <strong>Single Responsibility (SRP)</strong> y <strong>Alta Cohesión</strong>.</p>
+  </header>
+
+  <!-- ═══════════ CONTEXTO ═══════════ -->
+  <section>
+    <h2>1. Contexto del Problema</h2>
+    <p>
+      Se ha desarrollado un sistema de punto de venta para la tienda <strong>"Doña Rosa"</strong>.
+      El programa fue escrito en <strong>Java</strong> y permite gestionar productos, realizar ventas con carrito de compras,
+      imprimir recibos y generar reportes de ingresos. Toda la lógica del negocio, el acceso a datos, los cálculos financieros
+      se encuentran concentrados en <strong>una única clase</strong>:
+      <code>TiendaApp.java</code> (428 líneas).
+    </p>
+  </section>
+
+  <!-- ═══════════ QUÉ HACE EL PROGRAMA ═══════════ -->
+  <section>
+    <h2>2. ¿Qué hace el programa?</h2>
+    <p>El sistema ofrece las siguientes funcionalidades a través de un menú interactivo por consola:</p>
+
+    <div class="card-grid" style="margin-top:1rem">
+      <div class="card">
+        <div class="card-icon">🛒</div>
+        <h4>Realizar Ventas</h4>
+        <p>Agrega productos al carrito por código, valida stock, calcula subtotales, aplica IVA (19&nbsp;%) y procesa pagos en efectivo o tarjeta con cálculo de cambio.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📦</div>
+        <h4>Gestión de Productos</h4>
+        <p>Permite ver el catálogo completo, agregar nuevos productos con código, nombre, precio, stock y categoría, y buscar por código o nombre.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🧾</div>
+        <h4>Impresión de Recibos</h4>
+        <p>Al completar una venta se genera un recibo formateado con los datos de la tienda, detalle de productos, impuestos y totales.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <h4>Reportes de Ventas</h4>
+        <p>Muestra el historial de ventas, ingresos totales, productos más vendidos y un desglose por método de pago.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ ESTRUCTURA ACTUAL ═══════════ -->
+  <section>
+    <h2>3. Estructura Actual del Código</h2>
+    <p>Toda la aplicación vive dentro de una sola clase. A continuación se ilustra su estructura simplificada:</p>
+
+    <pre><code><span class="kw">public class</span> <span class="typ">TiendaApp</span> {
+
+    <span class="cmt">// ── Datos de productos (listas paralelas) ──</span>
+    <span class="kw">private</span> List&lt;String&gt;  productoCodigos;
+    <span class="kw">private</span> List&lt;String&gt;  productoNombres;
+    <span class="kw">private</span> List&lt;Double&gt;  productoPrecios;
+    <span class="kw">private</span> List&lt;Integer&gt; productoStock;
+    <span class="kw">private</span> List&lt;String&gt;  productoCategorias;
+
+    <span class="cmt">// ── Datos de ventas registradas ──</span>
+    <span class="kw">private</span> List&lt;String&gt;         ventaFechas;
+    <span class="kw">private</span> List&lt;List&lt;String&gt;&gt;  ventaProductos;
+    <span class="kw">private</span> List&lt;Double&gt;         ventaTotales;
+    <span class="cmt">// ... más listas paralelas</span>
+
+    <span class="cmt">// ── Carrito temporal ──</span>
+    <span class="kw">private</span> List&lt;String&gt;  carritoProductos;
+    <span class="kw">private</span> List&lt;Integer&gt; carritoCantidades;
+    <span class="kw">private</span> List&lt;Double&gt;  carritoPrecios;
+
+    <span class="cmt">// ── Datos de la tienda ──</span>
+    <span class="kw">private</span> String nombreTienda  = <span class="str">"Dona Rosa"</span>;
+    <span class="kw">private</span> <span class="kw">double</span> impuesto     = <span class="num">0.19</span>;
+
+    <span class="cmt">// ── Métodos (todo aquí dentro) ──</span>
+    <span class="kw">public void</span> ejecutar()          { <span class="cmt">/* menú principal */</span> }
+    <span class="kw">public void</span> realizarVenta()     { <span class="cmt">/* 80+ líneas   */</span> }
+    <span class="kw">public void</span> verProductos()      { <span class="cmt">/* ...          */</span> }
+    <span class="kw">public void</span> agregarProducto()   { <span class="cmt">/* ...          */</span> }
+    <span class="kw">public void</span> buscarProducto()    { <span class="cmt">/* ...          */</span> }
+    <span class="kw">public void</span> verReporteVentas()  { <span class="cmt">/* ...          */</span> }
+    <span class="kw">private int</span>    leerEntero()      { <span class="cmt">/* ...          */</span> }
+    <span class="kw">private double</span> leerDecimal()     { <span class="cmt">/* ...          */</span> }
+}</code></pre>
+  </section>
+
+  <!-- ═══════════ PROBLEMAS DETECTADOS ═══════════ -->
+  <section>
+    <h2>4. Problemas Detectados</h2>
+
+    <div class="alert alert--red">
+      <strong>Violación del Principio de Responsabilidad Única (SRP)</strong>
+      La clase <code>TiendaApp</code> tiene <em>múltiples razones para cambiar</em>: gestiona productos, procesa ventas,
+      imprime recibos, genera reportes, maneja la interfaz de consola y contiene la lógica de cálculo de impuestos.
+      Cualquier modificación en una de estas áreas obliga a editar la misma clase, aumentando el riesgo de errores.
+    </div>
+
+    <div class="alert alert--amber">
+      <strong>Baja Cohesión</strong>
+      Los campos y métodos de la clase no están agrupados por un propósito común. Las listas paralelas de productos,
+      ventas y carrito coexisten sin relación estructural, lo que dificulta la comprensión y el mantenimiento.
+    </div>
+
+  <!-- ═══════════ OBJETIVO DEL RETO ═══════════ -->
+  <section>
+    <h2>5. Objetivo del Reto</h2>
+
+    <div class="alert alert--green">
+      <strong>Meta</strong>
+      Refactorizar <code>TiendaApp.java</code> en múltiples clases bien definidas, aplicando los principios de
+      <strong>SRP (Single Responsibility Principle)</strong> y <strong>Alta Cohesión (High Cohesion),</strong> 
+      de modo que cada clase tenga <em>una única razón para cambiar</em> y agrupe únicamente los datos y métodos
+      que se relacionan estrechamente entre sí.
+    </div>
+
+    <h3>Principios clave a aplicar:</h3>
+    <div class="card-grid" style="margin-top:.75rem">
+      <div class="card">
+        <h4>SRP — Single Responsibility</h4>
+        <p><em>"Una clase debe tener una, y solo una, razón para cambiar."</em> — Robert C. Martin</p>
+      </div>
+      <div class="card">
+        <h4>Alta Cohesión</h4>
+        <p><em>"Los elementos de un módulo deben estar funcionalmente relacionados. Un módulo cohesivo hace una sola cosa bien."</em></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ REPOSITORIO ═══════════ -->
+  <section style="text-align:center; padding: 2rem 0;">
+    <p style="margin-bottom:1rem; color:var(--muted);">Descarga el código fuente para comenzar el reto:</p>
+    <a class="repo-link" href="https://github.com/Juandavm12/RetoArq.git" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.63 7.63 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+      github.com/Juandavm12/RetoArq
+    </a>
+  </section>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer>
+    Reto de Arquitectura de Software creado por GRUPO 5 &middot; 2026
+  </footer>
+
+</div>
+
+</body>
+</html>
